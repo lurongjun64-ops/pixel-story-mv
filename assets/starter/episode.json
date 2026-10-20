@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "title": "攒一颗星",
+  "width": 960, "height": 540,
+  "logicalWidth": 320, "logicalHeight": 180,
+  "fps": 60, "durationFrames": 720,
+  "hero": {"name": "小岚", "coat": "#6fc8bf", "stepFps": 8, "spriteId":"hero"},
+  "art": {
+    "palette":["#263947","#e3bb91","#24394b","#6fc8bf","#889aac"],
+    "assets":[{"id":"hero","path":"art/hero.png","frameWidth":20,"frameHeight":32,"source":"Original procedural pixel sprite, created locally for this skill", "animations":{
+      "idle":{"frames":[0,1],"durations":[48,6],"mode":"forward"},
+      "walk":{"frames":[2,3,4,5],"durations":[6,9,6,9],"mode":"forward"}
+    }}]
+  },
+  "scenes": [
+    {"id":"wish", "start":0, "end":240, "place":"station", "label":"愿望 / 把远方装进口袋", "hero":{"fromX":0.16,"toX":0.58,"action":"walk"}, "stats":{"light":[0,12],"time":[100,92]}},
+    {"id":"cost", "start":240, "end":480, "place":"workshop", "label":"积攒 / 灯还亮着", "hero":{"fromX":0.44,"toX":0.44,"action":"idle"}, "stats":{"light":[12,96],"time":[92,25]}},
+    {"id":"choice", "start":480, "end":720, "place":"rooftop", "label":"选择 / 今晚就出发", "hero":{"fromX":0.35,"toX":0.7,"action":"walk"}, "stats":{"light":[96,80],"time":[25,36]}}
+  ],
+  "captions": [
+    {"start":0,"end":240,"text":"我想攒够星光，再去看远方。"},
+    {"start":240,"end":480,"text":"星光越来越多，留给自己的夜晚却越来越少。"},
+    {"start":480,"end":720,"text":"于是今晚，我先把自己带出了门。"}
+  ],
+  "cues": [
+    {"frame":0,"kind":"story","note":"愿望出现；暂无音乐，节奏待匹配"},
+    {"frame":240,"kind":"action","note":"工作场景切换，积攒速度增加"},
+    {"frame":480,"kind":"action","note":"离开工作台，夜空重新展开"}
+  ],
+  "audio":{"path":null,"status":"missing","source":null,"offsetSeconds":0,"gainDb":-6,"mix":{"ducking":true,"fadeOutSeconds":0.4,"targetLufs":-16,"truePeakDb":-2}}
+}

@@ -1,0 +1,17 @@
+node_modules/
+.git/
+.DS_Store
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+work/
+outputs/
+renders/
+frames/
+out/
+*.mp4
+*.wav
+*.m4a
+*.log

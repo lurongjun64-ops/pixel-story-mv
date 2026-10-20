@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>像素叙事 MV · 工程预览</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#080f1b;color:#dce7ed;font:14px system-ui,sans-serif;display:grid;place-items:center;min-height:100vh}main{width:min(1100px,100%);padding:20px}canvas{width:100%;display:block;background:#0b1529;box-shadow:0 18px 70px #0005}header{display:flex;justify-content:space-between;gap:12px;margin:0 0 12px;color:#9db4c7}footer{display:flex;gap:12px;align-items:center;margin-top:14px}input{flex:1;accent-color:#6fc8bf}button{background:#183048;border:1px solid #44617c;color:#edf5f7;padding:8px 16px;cursor:pointer}small{color:#8da2b4}body.export{display:block;min-height:0;background:transparent}body.export main{padding:0;width:auto}body.export header,body.export footer,body.export small{display:none}body.export canvas{width:auto;box-shadow:none}
+</style>
+<main><header><span id="title"></span><span id="audio-status">原创模板 · 无声母版</span></header><canvas id="film"></canvas><footer><button id="play">暂停</button><input id="seek" aria-label="视频帧" type="range" min="0" value="0"><span id="clock"></span></footer><small>画面预览不播放音乐；带音轨的导出文件需另行视听核对。</small></main>
+<script type="module">
+import {spriteFrameAt,auditPixels} from './pixel-art.mjs';
+const sprites=new Map();
+let E, ctx, art, a, playing=true, last=0, current=0, playhead=0, diagnostics=[];
+const C=document.querySelector('#film'), seek=document.querySelector('#seek');
+const clamp=(x,l,h)=>Math.max(l,Math.min(h,x)), lerp=(x,y,p)=>x+(y-x)*p;
+function box(g,x,y,w,h,color){g.fillStyle=color;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
+function text(s,x,y,size,color='#edf4f6',align='left'){ctx.font=`500 ${size}px "PingFang SC","Microsoft YaHei",sans-serif`;ctx.fillStyle=color;ctx.textAlign=align;ctx.fillText(s,x,y);}
+function panel(x,y,w,h){box(ctx,x,y,w,h,'#0b172a');ctx.strokeStyle='#426278';ctx.lineWidth=2;ctx.strokeRect(x+1,y+1,w-2,h-2);}
+function star(x,y,r,color){box(a,x-r,y-r/3,r*2,r*2/3,color);box(a,x-r/3,y-r,r*2/3,r*2,color);}
+function drawWorld(s,f,p){
+ const w=E.logicalWidth,h=E.logicalHeight,ground=Math.round(h*0.78), shift=s.place==='rooftop'?12:0;
+ box(a,0,0,w,h,'#0b1529');
+ for(let i=0;i<35;i++){const x=(i*71+17)%w,y=24+(i*19)%Math.max(1,ground-38);box(a,x,y,1,1,Math.floor(f/30+i)%4===0?'#d5e5d8':'#42566c');}
+ for(let i=0;i<Math.ceil(w/24);i++){
+  const bh=30+(i*31)%52, x=i*24;
+  box(a,x,ground-bh-shift,21,bh,'#15243c');
+  for(let row=0;row<Math.floor(bh/8);row++)for(let col=0;col<2;col++)if((i+row+col)%3!==0)box(a,x+4+col*9,ground-bh-shift+6+row*8,2,3,'#648184');
+ }
+ box(a,0,ground,w,h-ground,'#1e3545');box(a,0,ground,w,2,'#63858a');
+ if(s.place==='station'){
+  box(a,w*.69,ground-26,4,26,'#718b91');box(a,w*.66,ground-30,23,10,'#b5bda0');
+  box(a,w*.08,ground-8,w*.20,3,'#52707a');star(w*.77,ground-50,5,'#e4dcab');
+ } else if(s.place==='workshop'){
+  box(a,w*.53,ground-15,w*.27,4,'#536b7b');box(a,w*.56,ground-11,3,11,'#536b7b');box(a,w*.76,ground-11,3,11,'#536b7b');
+  box(a,w*.59,ground-34,20,18,'#4d747d');box(a,w*.60,ground-32,14,12,'#8fcec4');
+  for(let i=0;i<4;i++)box(a,w*.32+i*5,ground-11-i*2,4,9+i*2,'#7c9f91');
+ } else {star(w*.74,ground-65,7,'#e4dcab');box(a,0,ground-5,w,2,'#4c7180');}
+ const hx=Math.round(lerp(s.hero.fromX,s.hero.toX,p)*w), hy=ground-1;
+ if(E.hero.spriteId){
+  const {image,spec}=sprites.get(E.hero.spriteId),frame=spriteFrameAt(spec.animations[s.hero.action],f-s.start),columns=image.width/spec.frameWidth;
+  a.imageSmoothingEnabled=false;a.drawImage(image,(frame%columns)*spec.frameWidth,Math.floor(frame/columns)*spec.frameHeight,spec.frameWidth,spec.frameHeight,hx-Math.floor(spec.frameWidth/2),hy-spec.frameHeight,spec.frameWidth,spec.frameHeight);return;
+ }
+ const pose=Math.floor(f/E.fps*E.hero.stepFps)%4,walk=s.hero.action==='walk';
+ const lift=walk&&pose%2===0?1:0;
+ box(a,hx-6,hy-30-lift,12,10,'#263947');box(a,hx-5,hy-25-lift,10,8,'#e3bb91');
+ box(a,hx-3,hy-22-lift,1,1,'#24394b');box(a,hx+2,hy-22-lift,1,1,'#24394b');
+ box(a,hx-5,hy-17-lift,10,11,E.hero.coat);box(a,hx-8,hy-16-lift,3,8,E.hero.coat);box(a,hx+5,hy-16-lift,3,8,E.hero.coat);
+ box(a,hx-5-(walk&&pose===0?2:0),hy-6,4,6,'#889aac');box(a,hx+1+(walk&&pose===2?2:0),hy-6,4,6,'#889aac');
+}
+function wrapped(s,max,size){ctx.font=`500 ${size}px "PingFang SC","Microsoft YaHei",sans-serif`;const lines=[''];for(const ch of s){if(ctx.measureText(lines[lines.length-1]+ch).width>max)lines.push(ch);else lines[lines.length-1]+=ch;}return lines;}
+window.getDiagnostics=()=>diagnostics;
+window.renderFrame=function(frame){
+ if(!E)return; diagnostics=[];current=clamp(Math.floor(frame),0,E.durationFrames-1);
+ const s=E.scenes.find(s=>current>=s.start&&current<s.end),p=(current-s.start)/Math.max(1,s.end-s.start-1),u=E.height/540,W=E.width,H=E.height,portrait=H>W;
+ ctx.clearRect(0,0,W,H);a.clearRect(0,0,art.width,art.height);drawWorld(s,current,p);ctx.imageSmoothingEnabled=false;ctx.drawImage(art,0,0,W,H);
+ const pad=24*u,pw=portrait?W-pad*2:W*.37,ph=portrait?110*u:85*u;
+ panel(pad,pad,pw,ph);text(E.hero.name,pad+15*u,pad+28*u,19*u);
+ const light=Math.round(lerp(...s.stats.light,p)),time=Math.round(lerp(...s.stats.time,p));
+ text(`星光 ${light}   ·   余裕 ${time}`,pad+15*u,pad+57*u,17*u,'#b7d4cf');
+ if(portrait)text(s.label,pad+15*u,pad+85*u,14*u,'#d0c59b');
+ else {ctx.font=`500 ${16*u}px sans-serif`;if(ctx.measureText(s.label).width>W*.53-pad)diagnostics.push('scene label overflow');text(s.label,W-pad,48*u,16*u,'#d0c59b','right');}
+ const cap=E.captions.find(c=>current>=c.start&&current<c.end);
+ if(cap){const size=portrait?19*u:22*u,lines=wrapped(cap.text,W-2*pad-32*u,size),height=(lines.length*30+24)*u,y=H-pad-height;if(height>H*.28)diagnostics.push('caption too tall');panel(pad,y,W-pad*2,height);lines.forEach((line,i)=>text(line,pad+16*u,y+(31+i*30)*u,size));}
+ if(!window.__RENDER_MODE__){seek.value=current;document.querySelector('#clock').textContent=`${(current/E.fps).toFixed(1)}s`;}
+};
+window.auditAssets=()=>[...sprites.values()].map(({image,spec})=>{const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const g=c.getContext('2d');g.drawImage(image,0,0);return auditPixels(g.getImageData(0,0,c.width,c.height).data,c.width,c.height,spec,E.art.palette);});
+window.ready=(async()=>{E=await (await fetch('episode.json')).json();C.width=E.width;C.height=E.height;ctx=C.getContext('2d');art=document.createElement('canvas');art.width=E.logicalWidth;art.height=E.logicalHeight;a=art.getContext('2d');await Promise.all((E.art?.assets??[]).map(async spec=>{const image=new Image();image.src=spec.path;await image.decode();sprites.set(spec.id,{image,spec});}));await document.fonts.ready;seek.max=E.durationFrames-1;document.querySelector('#title').textContent=E.title;document.querySelector('#audio-status').textContent=E.audio.path||E.cues.some(c=>c.sound)?'原创模板 · 音频仅用于导出':'原创模板 · 无声母版';if(window.__RENDER_MODE__)document.body.classList.add('export');window.renderFrame(0);return true;})();
+seek.oninput=()=>{playing=false;playhead=Number(seek.value);document.querySelector('#play').textContent='播放';window.renderFrame(playhead);};
+document.querySelector('#play').onclick=()=>{playing=!playing;document.querySelector('#play').textContent=playing?'暂停':'播放';last=0;};
+function tick(t){if(E&&playing&&!window.__RENDER_MODE__){if(last){playhead=(playhead+(t-last)/1000*E.fps)%E.durationFrames;window.renderFrame(playhead);}last=t;}requestAnimationFrame(tick);}window.ready.then(()=>requestAnimationFrame(tick));
+</script></html>

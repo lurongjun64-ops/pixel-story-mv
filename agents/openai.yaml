@@ -1,0 +1,4 @@
+interface:
+  display_name: "像素叙事 MV"
+  short_description: "制作像素人物与游戏界面驱动的叙事 MV，含音乐时间轴、预览与本地成片检查"
+  default_prompt: "用 $pixel-story-mv 做一条像素风叙事短片，主题是【主题】，完成预览、本地成片和检查。"
